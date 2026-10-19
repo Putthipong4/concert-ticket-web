@@ -17,7 +17,7 @@ import MyTicket from './screen/MyTicket';
 import Order from './screen/Admin/Order';
 import CheckOrder from './components/Admin/CheckOrder';
 import QrCode from './screen/QrCode';
-import Showdate from './screen/Admin/showdate';
+import Showdate from './screen/Admin/Showdate';
 import Admin from './screen/Admin/Admin';
 import Addadmin from './components/Admin/Addadmin';
 import ProfileAdmin from './screen/Admin/ProfileAdmin';
