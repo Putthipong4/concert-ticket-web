@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { useParams } from "react-router-dom";
-import Axios from "axios";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
+import { mockGetConcertDetail, mockCheckAuth } from "../mock/mockApi";
 
 function Detail() {
   const { id } = useParams(); // รับ ID จาก URL
@@ -22,11 +22,12 @@ function Detail() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const refreshUser = () => {
     setIsAuthLoading(true);
-    Axios.get("http://localhost:3001/api/member/checkAuth", { withCredentials: true })
+    mockCheckAuth()
       .then((response) => {
-        setUser(response.data.user);
+        setUser(response.user);
       })
       .catch(() => {
         setUser(null);
@@ -45,21 +46,17 @@ function Detail() {
     return () => {
       delete window.refreshNavbarUser;
     };
-  }, [])
+  }, []);
 
   useEffect(() => {
-    Axios.get(`http://localhost:3001/api/concert/detailsconcert/${id}`)
-      .then((response) => {
-        setConcert(response.data);
-        console.log(response.data)
+    mockGetConcertDetail(id)
+      .then((data) => {
+        setConcert(data);
       })
       .catch((error) => {
         console.error("Error fetching concert:", error);
       });
   }, [id]);
-
-
-
 
   if (!concert) return <div>Loading...</div>;
 
@@ -88,7 +85,7 @@ function Detail() {
           <div className="grid h-full grow place-items-center">
             <figure className="h-[350px]">
               <img
-                src={`http://localhost:3001/uploads/poster/${concert.Poster}`}
+                src={concert.Poster}
                 alt="Poster"
                 className="h-full object-contain"
               />
@@ -186,12 +183,6 @@ function Detail() {
         <div className="card bg-base-300 card-xl mx-auto  max-w-screen-xl shadow-sm">
           <div className="card-body">
             <div className="flex gap-4">
-              <img
-                src="../assets/image/stage.png"
-                alt="stage"
-                height={50}
-                width={150}
-              />
               <div className="flex flex-col gap-12">
                 <div className="flex items-center gap-2">
                   <MapPin size={25} />

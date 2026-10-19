@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import Axios from "axios";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
 import Navbar from "../components/Navbar";
 import Swal from "sweetalert2";
+import { mockCheckAuth, mockUpdateProfile } from "../mock/mockApi";
 
 function Profile() {
   const [formdata, setFormdata] = useState({
@@ -17,17 +17,15 @@ function Profile() {
   });
 
   const fetchCurrentUser = () => {
-    Axios.get("http://localhost:3001/api/member/checkAuth", {
-      withCredentials: true,
-    })
+    mockCheckAuth()
       .then((response) => {
         setFormdata((prev) => ({
           ...prev,
-          Member_id: response.data.user.Member_id,
-          Firstname: response.data.user.Firstname,
-          Lastname: response.data.user.Lastname,
-          Telephone: response.data.user.Telephone,
-          Email: response.data.user.Email,
+          Member_id: response.user.Member_id,
+          Firstname: response.user.Firstname,
+          Lastname: response.user.Lastname,
+          Telephone: response.user.Telephone,
+          Email: response.user.Email,
           currentPassword: "",
           newPassword: "",
           confirmPassword: "",
@@ -61,11 +59,7 @@ function Profile() {
 
     try {
 
-      const response = await Axios.put(
-        "http://localhost:3001/api/member/updateProfile",
-        formdata,
-        { withCredentials: true }
-      );
+      const response = await mockUpdateProfile(formdata);
 
       Swal.close();
 

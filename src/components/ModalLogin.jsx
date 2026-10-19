@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import Axios from "axios";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import ModalRegister from "./ModalRegister";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { mockLogin } from "../mock/mockApi";
 
 function ModalLogin({ setUser }) {
-  
   const navigate = useNavigate();
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const toggleLoginPassword = () => setShowLoginPassword(!showLoginPassword);
@@ -18,7 +17,6 @@ function ModalLogin({ setUser }) {
   const [al, setAl] = useState("");
 
   const [isVisible, setIsVisible] = useState(false);
-  
 
   useEffect(() => {
     if (error || al) {
@@ -47,41 +45,28 @@ function ModalLogin({ setUser }) {
 
   const login = async () => {
     try {
-      const response = await Axios.post(
-        "http://localhost:3001/api/login",
-        {
-          email: loginemail,
-          password: loginpassword,
-        },
-        {
-          withCredentials: true,
-        },
-      );
-       const userData = response.data.userData; // ข้อมูลผู้ใช้
-    const { role } = response.data;
-      console.log("response:", response.data.userData);
-      
+      const response = await mockLogin(loginemail, loginpassword);
+      const userData = response.userData;
+      const { role } = response;
+
       if (role === "admin") {
         navigate("/admin/HomeAdmin");
-        localStorage.setItem('adminId', userData.Admin_id);
       } else {
-        window.location.reload()
-        localStorage.setItem('memberId', userData.Member_id);
+        window.location.reload();
       }
-      setUser(response.data.userData);
+      setUser(userData);
       setLoginEmail("");
       setLoginPassword("");
       document.activeElement.blur();
       document.getElementById("my_modal_1").close();
     } catch (error) {
-      console.log("error", error);
       if (error.response && error.response.status === 400) {
-          setError(error.response.data.message);
-          
-      } if (error.response && error.response.status === 500) {
         setError(error.response.data.message);
+      } else if (error.response && error.response.status === 500) {
+        setError(error.response.data.message);
+      } else {
+        setError(error.message || "เกิดข้อผิดพลาด");
       }
-          
     }
   };
 
@@ -90,7 +75,6 @@ function ModalLogin({ setUser }) {
       <ModalRegister />
       <dialog id="my_modal_1" className="modal backdrop-blur-xs z-50 ">
         <div className="modal-box">
-          
           <form method="dialog">
             {/* if there is a button in form, it will close the modal */}
             <button
@@ -106,6 +90,14 @@ function ModalLogin({ setUser }) {
           <h2 className="kanit-medium mb-5 flex justify-center text-3xl">
             Concert Ticket
           </h2>
+
+          {/* Demo credentials hint */}
+          <div className="mx-auto w-xs mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm kanit-medium text-blue-800">
+            <p className="font-bold mb-1">🎭 Demo Account:</p>
+            <p>อีเมล: demo@concertticket.com</p>
+            <p>รหัสผ่าน: demo1234</p>
+          </div>
+
           <fieldset className="fieldset bg-base-100 rounded-box mx-auto w-xs p-4">
             <legend className="fieldset-legend kanit-medium text-center text-xl">
               เข้าสู่ระบบ
@@ -222,7 +214,6 @@ function ModalLogin({ setUser }) {
                 </svg>
                 <span className="kanit-medium">{error}</span>
               </div>
-              
             )}
 
             {al && (
@@ -248,7 +239,6 @@ function ModalLogin({ setUser }) {
                 <span className="kanit-medium">{al}</span>
               </div>
             )}
-            
           </fieldset>
         </div>
       </dialog>

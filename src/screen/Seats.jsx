@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import Axios from "axios";
 import { Armchair } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
+import { mockGetSeats, mockGetMemberSeats, mockSelectSeats } from "../mock/mockApi";
 
 function Seats() {
   const navigate = useNavigate();
@@ -18,27 +18,17 @@ function Seats() {
   const [alreadyBooked, setAlreadyBooked] = useState(0);
 
   useEffect(() => {
-    Axios.get(
-      `http://localhost:3001/api/concert/ShowDateandConcert/${ShowDate_id}`,
-      {
-        withCredentials: true,
-      },
-    ).then((response) => {
-      setSeats(response.data);
+    mockGetSeats(ShowDate_id).then((data) => {
+      setSeats(data);
     });
   }, [ShowDate_id]);
 
   useEffect(() => {
     if (!memberId) return;
-    Axios.get(`http://localhost:3001/api/Order/MemberSeats/${memberId}/${ShowDate_id}`,
-      {
-        withCredentials: true,
-      },
-    )
-
+    mockGetMemberSeats(memberId, ShowDate_id)
       .then((res) => {
-        if (res.data.success) {
-          setAlreadyBooked(res.data.count);
+        if (res.success) {
+          setAlreadyBooked(res.count);
         }
       })
       .catch((err) => console.error("Error fetching booked seats:", err));
@@ -97,8 +87,6 @@ function Seats() {
   const pricePerSeat = seats.length > 0 ? seats[0].Price : 0;
   const totalPrice = pricePerSeat * selectedSeats.length;
 
-
-
   const handleSubmit = async () => {
     if (selectedSeats.length === 0) {
       Swal.fire({
@@ -118,37 +106,34 @@ function Seats() {
 
     if (result.isConfirmed) {
       try {
-      const response = await Axios.post(
-        `http://localhost:3001/api/Order/SelectSeats`,
-        {
+        const response = await mockSelectSeats({
           Seat_Number: selectedSeats,
           Member_id: memberId,
           Concert_id: seats.length > 0 ? seats[0].Concert_id : null,
           Price: pricePerSeat,
-          ShowDate_id 
-        },
-        { withCredentials: true }
-      );
+          ShowDate_id,
+        });
 
-      if (response.data.success) {
-      navigate(`/Idcard/${ShowDate_id}`, {
-        state: { selectedSeats, totalPrice, pricePerSeat },
-      });
-      } else {
-              Swal.fire({
-                title: response.data.message || "เกิดข้อผิดพลาด",
-                icon: "error",
-              });
-            }
+        if (response.success) {
+          navigate(`/Idcard/${ShowDate_id}`, {
+            state: { selectedSeats, totalPrice, pricePerSeat },
+          });
+        } else {
+          Swal.fire({
+            title: response.message || "เกิดข้อผิดพลาด",
+            icon: "error",
+          });
+        }
       } catch (error) {
-            Swal.fire({
-              title: "ไม่สามารถบันทึกข้อมูลได้",
-              text: error.message,
-              icon: "error",
-            });
-          }
+        Swal.fire({
+          title: "ไม่สามารถบันทึกข้อมูลได้",
+          text: error.message,
+          icon: "error",
+        });
+      }
     }
   };
+
   return (
     <div className="bg-base-100 flex min-h-screen flex-col">
       <Navbar />
@@ -177,7 +162,7 @@ function Seats() {
           {seats.length > 0 && (
             <figure className="h-[250px] md:h-[350px] mx-auto flex justify-center mt-5">
               <img
-                src={`http://localhost:3001/uploads/poster/${seats[0].Poster}`}
+                src={seats[0].Poster}
                 alt="Poster"
                 className="h-full object-contain rounded-xl shadow-lg"
               />

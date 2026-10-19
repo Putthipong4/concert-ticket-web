@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from "react";
 import ModalLogin from "./ModalLogin";
-import Axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { User } from "lucide-react";
+import { mockCheckAuth, mockLogout } from "../mock/mockApi";
 
 function Navbar() {
-  
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const refreshUser = () => {
     setIsAuthLoading(true);
-    Axios.get("http://localhost:3001/api/member/checkAuth", { withCredentials: true })
+    mockCheckAuth()
       .then((response) => {
-        setUser(response.data.user);
+        setUser(response.user);
       })
       .catch(() => {
         setUser(null);
@@ -34,39 +33,39 @@ function Navbar() {
       delete window.refreshNavbarUser;
     };
   }, []);
+
   const handleLogout = () => {
-  document.activeElement.blur();
+    document.activeElement.blur();
 
-  Swal.fire({
-    title: "ต้องการออกจากระบบหรือไม่?",
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "ใช่",
-    cancelButtonText: "ไม่",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      Axios.post("http://localhost:3001/api/logout", {}, { withCredentials: true })
-        .then(() => {
-          Swal.fire({
-            title: "ออกจากระบบสำเร็จ",
-            icon: "success",
-            confirmButtonText: "รับทราบ!",
-          }).then(() => {
-            setUser(null);
-            navigate("/");
+    Swal.fire({
+      title: "ต้องการออกจากระบบหรือไม่?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "ใช่",
+      cancelButtonText: "ไม่",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        mockLogout()
+          .then(() => {
+            Swal.fire({
+              title: "ออกจากระบบสำเร็จ",
+              icon: "success",
+              confirmButtonText: "รับทราบ!",
+            }).then(() => {
+              setUser(null);
+              navigate("/");
+            });
+          })
+          .catch((err) => {
+            console.error("Logout failed", err);
+            Swal.fire({
+              title: "เกิดข้อผิดพลาดในการออกจากระบบ",
+              icon: "error",
+            });
           });
-        })
-        .catch((err) => {
-          console.error("Logout failed", err);
-          Swal.fire({
-            title: "เกิดข้อผิดพลาดในการออกจากระบบ",
-            icon: "error",
-          });
-        });
-    }
-  });
-};
-
+      }
+    });
+  };
 
   const navigate = useNavigate();
 
@@ -93,7 +92,7 @@ function Navbar() {
                 className="btn btn-ghost btn-circle avatar"
               >
                 <div className="w-10 rounded-full">
-                  <User size={39}/>
+                  <User size={39} />
                 </div>
               </div>
             </div>
@@ -107,7 +106,7 @@ function Navbar() {
                 </a>
               </li>
               <li>
-                <a className="text-lg"  onClick={() => navigate("/MyTicket")}>บัตรของฉัน</a>
+                <a className="text-lg" onClick={() => navigate("/MyTicket")}>บัตรของฉัน</a>
               </li>
               <li>
                 <a onClick={handleLogout} className="text-lg">

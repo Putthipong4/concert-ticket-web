@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import Axios from "axios";
 import { MapPin, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { mockGetConcerts, mockGetRatings } from "../mock/mockApi";
 
 function Card() {
   const navigate = useNavigate();
@@ -11,14 +11,14 @@ function Card() {
   const [ratings, setRatings] = useState([]);
 
   useEffect(() => {
-    // ดึงข้อมูลคอนเสิร์ต
-    Axios.get("http://localhost:3001/api/concert/ShowdateandConcertCard")
-      .then((response) => setConcerts(response.data))
+    // ดึงข้อมูลคอนเสิร์ต (mock)
+    mockGetConcerts()
+      .then((data) => setConcerts(data))
       .catch((err) => console.error("Error fetching concerts:", err));
 
-    // ดึงข้อมูลเรตติ้ง
-    Axios.get("http://localhost:3001/api/Order/Rating")
-      .then((response) => setRatings(response.data))
+    // ดึงข้อมูลเรตติ้ง (mock)
+    mockGetRatings()
+      .then((data) => setRatings(data))
       .catch((err) => console.error("Error fetching ratings:", err));
   }, []);
 
@@ -61,7 +61,7 @@ function Card() {
       >
         <figure className="duration-150 ease-in-out hover:scale-105 h-full">
           <img
-            src={`http://localhost:3001/uploads/poster/${concert.Poster}`}
+            src={concert.Poster}
             width="175"
             className="object-contain mx-auto rounded-sm cursor-pointer"
             alt={concert.ConcertName}
@@ -89,7 +89,6 @@ function Card() {
             <div className="btn kanit-medium rounded-full w-full bg-yellow-400 text-black flex items-center justify-center ">
               <Star size={16} className="mr-2 text-yellow-700" />
               <span>{parseFloat(concert.Rating).toFixed(1)}</span>
-
             </div>
           ) : availableSeats <= 0 || isShowPassed ? (
             <button

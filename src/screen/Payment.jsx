@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
-import Axios from "axios";
 import Swal from "sweetalert2";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
+import { mockGetSeats, mockCancelOrder, mockPayment, mockGenerateQR } from "../mock/mockApi";
 
 function Payment() {
   const navigate = useNavigate();
@@ -24,77 +24,46 @@ function Payment() {
 
   const [paymentSlip, setPaymentSlip] = useState(null);
   const [concert, setConcert] = useState(null);
-  const [order, setOrder] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(10 * 60); // 10 นาที demo
   const [qrImage, setQrImage] = useState("");
   const [isPaid, setIsPaid] = useState(false);
   const isPaidRef = useRef(isPaid);
 
-  
-  console.log("Order ID:", Order_id);
   useEffect(() => {
-  isPaidRef.current = isPaid;
-}, [isPaid]);
+    isPaidRef.current = isPaid;
+  }, [isPaid]);
 
-  // โหลดข้อมูล concert
+  // โหลดข้อมูล concert (mock)
   useEffect(() => {
-    Axios.get(
-      `http://localhost:3001/api/concert/ShowDateandConcert/${ShowDate_id}`,
-      { withCredentials: true },
-    )
-      .then((res) => setConcert(res.data[0]))
+    mockGetSeats(ShowDate_id)
+      .then((data) => setConcert(data[0] || null))
       .catch((err) => console.error(err));
   }, [ShowDate_id]);
 
-  
-  // โหลด order + นับถอยหลัง
+  // นับถอยหลัง demo
   useEffect(() => {
-    if (!Order_id || isPaid) return; // ✅ ถ้า isPaid=true จะไม่ตั้ง timer แล้วนะ
-    
-    let timer;
-    Axios.get(`http://localhost:3001/api/Order/Order/${Order_id}`, {
-      withCredentials: true,
-    })
-      .then((res) => {
-        if (res.data.success) {
-          const data = res.data.data;
-          console.log(order)
-          setOrder(data);
-
-          if (data.expireTime) {
-            const expireTime = new Date(data.expireTime).getTime();
-            timer = setInterval(() => {
-              const now = Date.now();
-              const diff = Math.floor((expireTime - now) / 1000);
-
-              if (diff <= 0) {
-                clearInterval(timer);
-
-                // ✅ เช็คก่อนว่าจ่ายแล้วหรือยัง
-                if (!isPaidRef.current) {
-        autoCancel();
-        setTimeLeft(0);
-      }
-              } else {
-                setTimeLeft(diff);
-              }
-            }, 1000);
+    if (isPaid) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          if (!isPaidRef.current) {
+            autoCancel();
           }
+          return 0;
         }
-      })
-      .catch((err) => console.error(err));
-
+        return prev - 1;
+      });
+    }, 1000);
     return () => clearInterval(timer);
-  }, [Order_id, isPaid]); // ✅ ใส่ isPaid ใน dependency
+  }, [isPaid]);
 
-  // โหลด QR Code
+  // โหลด QR Code (mock)
   useEffect(() => {
     const fetchQR = async () => {
       try {
-        const response = await Axios.get(
-          `http://localhost:3001/api/Order/GenerateQR/${totalPrice}`,
-        );
-        setQrImage(response.data.qrImage);
+        const response = await mockGenerateQR(totalPrice);
+        setQrImage(response.qrImage);
       } catch (error) {
         console.error("Error fetching QR:", error);
       }
@@ -114,7 +83,7 @@ function Payment() {
 
   const autoCancel = async () => {
     try {
-      await Axios.put("http://localhost:3001/api/Order/CancelOrder", {
+      await mockCancelOrder({
         Member_id: memberId,
         Seat_Number: selectedSeats,
         Order_id,
@@ -144,34 +113,23 @@ function Payment() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("Slip", paymentSlip);
-    formData.append("Order_id", Order_id);
-    formData.append("Slip_date", slipDate);
-    formData.append("Slip_time", slipTime);
-    formData.append("Status_id", Status_id);
-
     try {
-      const response = await Axios.post(
-        "http://localhost:3001/api/Order/Payment",
-        formData,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" },
-        },
-      );
+      const response = await mockPayment({
+        Slip: paymentSlip,
+        Order_id,
+        Slip_date: slipDate,
+        Slip_time: slipTime,
+        Status_id,
+      });
 
-      if (response.data.success) {
+      if (response.success) {
         setIsPaid(true);
         setTimeLeft(0);
-        if (window.paymentTimer) {
-          clearInterval(window.paymentTimer);
-        }
         await Swal.fire({ title: "ชำระเงินเรียบร้อย", icon: "success" });
         navigate("/MyTicket");
       } else {
         Swal.fire({
-          title: response.data.message || "เกิดข้อผิดพลาด",
+          title: response.message || "เกิดข้อผิดพลาด",
           icon: "error",
         });
       }
@@ -183,7 +141,6 @@ function Payment() {
       });
     }
   };
-
 
   return (
     <div className="kanit-medium bg-base-100 flex min-h-screen flex-col">

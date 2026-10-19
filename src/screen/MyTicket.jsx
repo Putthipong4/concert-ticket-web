@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import Axios from "axios";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
 import Navbar from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import Breadcrumbs from "../components/Admin/Breadcrumbs";
+import { mockGetMyTickets, mockCancelOrder, mockAddRating } from "../mock/mockApi";
 
 function MyTicket() {
   const memberId = localStorage.getItem("memberId");
@@ -14,12 +14,10 @@ function MyTicket() {
   useEffect(() => {
     if (!memberId) return;
 
-    Axios.get(`http://localhost:3001/api/Order/MyTicket/${memberId}`, {
-      withCredentials: true,
-    })
+    mockGetMyTickets(memberId)
       .then((res) => {
-        if (res.data.success) {
-          setTickets(res.data.data);
+        if (res.success) {
+          setTickets(res.data);
         }
       })
       .catch((err) => console.error("Error fetching tickets:", err));
@@ -36,17 +34,16 @@ function MyTicket() {
 
   const cancelTickets = tickets.filter(
     (t) => t.Status_Name === "ยกเลิกคำสั่งซื้อเนื่องจากไม่ชำระเงินตามกำหนด ยกเลิกโดยระบบ" || t.Status_Name === "ยกเลิกคำสั่งซื้อเนื่องจากชำระเงินไม่ถูกต้อง ยกเลิกโดยผู้ดูแลระบบ"
-
   );
 
+  const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    if (!memberId) return;
     const timer = setInterval(() => {
       setTick((t) => t + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [memberId]);
+  }, []);
 
   const getTimeLeft = (expireTime) => {
     if (!expireTime) return 0;
@@ -80,22 +77,11 @@ function MyTicket() {
     });
   };
 
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTick((t) => t + 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const refreshTickets = () => {
-    Axios.get(`http://localhost:3001/api/Order/MyTicket/${memberId}`, {
-      withCredentials: true,
-    })
+    mockGetMyTickets(memberId)
       .then((res) => {
-        if (res.data.success) {
-          setTickets(res.data.data);
+        if (res.success) {
+          setTickets(res.data);
         }
       })
       .catch((err) => console.error("Error fetching tickets:", err));
@@ -113,7 +99,7 @@ function MyTicket() {
 
       if (timeLeft === 0 && !cancelledOrders.has(ticket.Order_id)) {
         try {
-          await Axios.put("http://localhost:3001/api/Order/CancelOrder", {
+          await mockCancelOrder({
             Member_id: memberId,
             Order_id: ticket.Order_id,
             Seat_Number: ticket.Seat_Number.split(", "),
@@ -148,7 +134,6 @@ function MyTicket() {
   }, 0);
 
   const totalAll = totalPendingAmount + totalPaidAmount;
-
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -274,7 +259,7 @@ function MyTicket() {
 
                   if (rating) {
                     try {
-                      await Axios.put("http://localhost:3001/api/Order/AddRating", {
+                      await mockAddRating({
                         Member_id: memberId,
                         Concert_id: ticket.Concert_id,
                         Rating: rating,
@@ -394,8 +379,6 @@ function MyTicket() {
           ) : (
             <div className="grid gap-5">
               {cancelTickets.map((ticket) => {
-
-
                 return (
                   <div
                     key={ticket.Order_id}
@@ -427,7 +410,6 @@ function MyTicket() {
       </div>
     </div>
   );
-
 }
 
 export default MyTicket;
